@@ -1,0 +1,13 @@
+{
+  "BONUS_POSITION": "Posição Bonus: ",
+  "BONUS_POSITION_HINT": "A posição bonus deve ser um número inteiro maior ou igual a 1",
+  "BONUS_POSITION_DISABLE": "Para não utilizar a posição bonus, digite 0",
+  "TITLE": "====|====|====|==== Monta Palavras ====|====|====|====",
+  "LETTERS_ENTRY": "Digite as letras disponíveis nesta jogada: ",
+  "SEPARATOR": "====|====|====|====|====|====|====|====|====|====|====",
+  "INVALID_CHARACTERS_WARNING": "Por favor, informe pelo menos uma letra válida.",
+  "VALID_CHARACTERS_HINT": "Letras válidas: Caracteres de A a Z, maiúscula ou minúscula, sem acentos.",
+  "NO_WORD_FOUND": "Nenhuma palavra encontrada.",
+  "WORDS_LEFT": "Sobraram:",
+  "BLANK": ""
+}
