@@ -91,31 +91,31 @@ class WordScramble {
   getUserInputs = () => {
     try {
       this.rl.question(this.messages.LETTERS_ENTRY, (letters) => {
-        if (letters.length > 0) {
-          letters = this.formatWord(letters);
-          
-          if (letters.length > 0) {
-            this.rl.question(this.messages.BONUS_POSITION, (bonus) => {
-              if (this.checkBonusPosition(bonus)) {
-                let words = this.buildWords(letters);
-  
-                if(words.length > 0) {
-                  words = this.scoreWords(words, bonus);
-                  const winner = this.rankWords(words);
-                  
-                  this.printWinner(winner);
-                } else {
-                  letters = this.formatUnusedLetters(letters);
-                  this.printNoWords(letters);
-                }
+        const input = { letters };
+        this.formatWord(input, 'letters');
+        
+        if (input.letters.length > 0) {
+          this.rl.question(this.messages.BONUS_POSITION, (position) => {
+            const bonus = { position };
+
+            if (this.checkBonusPosition(bonus)) {
+              const matchedWords = this.buildWords(input);
+
+              if(matchedWords.length > 0) {
+                this.scoreWords(matchedWords, bonus);
+                this.rankWords(matchedWords);
+
+                this.printWinner(matchedWords[0]);
               } else {
-                this.printBonusHint();
+                this.formatUnusedLetters(input);
+                this.printNoWords(input);
               }
-              this.getUserInputs();
-            });
-          } else {
-            this.printLettersHint();
-          }
+            } else {
+              this.printBonusHint();
+            }
+
+            this.getUserInputs();
+          });
         } else {
           this.printLettersHint();
         }
@@ -138,40 +138,35 @@ class WordScramble {
    * letters.
    * 
    * It will sort the matched words for highest score first. After that, will
-   * filter the array of words getting the highest scores.
+   * filter the array of words removing the lower scores.
    * 
    * If the remaining array has more than 1 object, it will apply the next rule,
-   * sorting the words by length. The lowest lengths will come first, and another
-   * filter will be applied.
+   * sorting the words by length. The lower lengths will come first, and remove
+   * the higher lengths.
    * 
    * If the remaining array still have more than 1 object, the last rule will take
    * place and order the words alphabetically, and get the first position.
    * 
-   * At last, it will return the object inside the array.
+   * @param Array matchedWords - Array of objects containing all matched words.
    * 
-   * @param Array array - Contains an array of objects containing all the matched words.
-   * 
-   * @return object
+   * @return void
    * @throws Error
    * 
    * @author Rômulo Alves Lousada
    */
-  rankWords = (array) => {
+  rankWords = (matchedWords) => {
     try {
-      array = this.sortWordsByScore(array);
-      array = this.filterHighestScores(array);
+      this.sortWordsByScore(matchedWords);
+      this.removeLowerScores(matchedWords);
       
-      if (array.length > 1) {
-        array = this.sortWordsByLength(array);
-        array = this.filterLowestLengths(array);
+      if (matchedWords.length > 1) {
+        this.sortWordsByLength(matchedWords);
+        this.removeHigherLengths(matchedWords);
   
-        if (array.length > 1) {
-          array = this.sortWordsAlphabetically(array);
-          array.splice(1);
+        if (matchedWords.length > 1) {
+          this.sortWordsAlphabetically(matchedWords);
         }
       }
-      
-      return array.shift();
     } catch (error) {
       throw error;
     }
@@ -191,34 +186,31 @@ class WordScramble {
    * After looping for every letter of the word, it will save the score inside
    * the word object and return the array with all scores calculated.
    * 
-   * @param Array array - Contains an array of objects containing all the matched words.
-   * @param Int bonus - Bonus position to double the letter score.
+   * @param Array matchedWords - Array of objects containing all matched words.
+   * @param Object bonus - Object with the position of the bonus letter.
    * 
-   * @return array
+   * @return void
    * @throws Error
    * 
    * @author Rômulo Alves Lousada
    */
-  scoreWords = (array, bonus) => {
+  scoreWords = (matchedWords, bonus) => {
     try {
-      for (let object in array) {
+      for (let match of matchedWords) {
         let score = 0;
-  
-        for(let index in array[object].word) {
-          const letter = array[object].word[index];
-          let letterScore = this.score[letter];
 
-          if (parseInt(++index) === parseInt(bonus)) {
+        for(let index in match.word) {
+          let letterScore = this.score[match.word[index]];
+
+          if (parseInt(++index) === parseInt(bonus.position)) {
             letterScore *= 2;
           }
 
           score += letterScore;
         }
-  
-        array[object].score = score;
+
+        match.score = score;
       }
-  
-      return array;
     } catch (error) {
       throw error;
     }
@@ -244,44 +236,46 @@ class WordScramble {
    * backup word could be entirely matched by the inputted letters, therefore,
    * saving the word and the unused letters.
    * 
-   * @param String letters - User inputted letters.
+   * @param Object input - Object with the letters to build the words.
    * 
    * @return array
    * @throws Error
    * 
    * @author Rômulo Alves Lousada
    */
-  buildWords = (letters) => {
+  buildWords = (input) => {
     try {
-      const builtWords = [];
+      const matchedWords = [];
   
       for (let word of this.words) {
-        word = this.formatWord(word);
+        const databaseWord = { letters: word };
+
+        this.formatWord(databaseWord, 'letters');
         
-        let backupWord = word;
-        let unusedLetters = "";
+        let backupWord = databaseWord.letters;
+        let unusedLetters = { letters: "" };
         
-        for (let letter of letters) {
+        for (let letter of input.letters) {
           const index = backupWord.indexOf(letter);
   
           if(index !== -1) {
             backupWord = backupWord.slice(0, index) + backupWord.slice(index + 1);
           } else {
-            unusedLetters += letter;
+            unusedLetters.letters += letter;
           }
         }
   
         if (backupWord.length === 0) {
-          unusedLetters = this.formatUnusedLetters(unusedLetters);
+          this.formatUnusedLetters(unusedLetters);
 
-          builtWords.push({
-            word,
-            unusedLetters
+          matchedWords.push({
+            word: databaseWord.letters,
+            unusedLetters: unusedLetters.letters
           });
         }
       }
       
-      return builtWords;
+      return matchedWords;
     } catch (error) {
       throw error;
     }
@@ -294,10 +288,10 @@ class WordScramble {
   /**
    * Check Bonus Position
    * 
-   * This function will check if the bonus position can be converted to
-   * a valid positive integer.
+   * This function will remove all whitespaces from the bonus position and
+   * then check if it can be converted to a valid positive integer.
    * 
-   * @param String bonus - Inputted bonus position.
+   * @param Object bonus - Object with the position of the bonus letter.
    * 
    * @return bool
    * @throws Error
@@ -305,9 +299,9 @@ class WordScramble {
    * @author Rômulo Alves Lousada
    */
   checkBonusPosition = (bonus) => {
-    bonus = this.removeWhitespaces(bonus);
+    this.removeWhitespaces(bonus, 'position');
 
-    return (!isNaN(bonus) && parseInt(bonus) >= 0);
+    return (!isNaN(bonus.position) && parseInt(bonus.position) >= 0);
   };
 
   /***************************************************************/
@@ -321,16 +315,16 @@ class WordScramble {
    * 
    * The highest score words will be sorted first.
    * 
-   * @param Array array - Contains an array of objects containing all the matched words.
+   * @param Array matchedWords - Array of objects containing all matched words.
    * 
-   * @return array
+   * @return void
    * @throws Error
    * 
    * @author Rômulo Alves Lousada
    */
-  sortWordsByScore = (array) => {
+  sortWordsByScore = (matchedWords) => {
     try {
-      return array.sort((a, b) => {
+      matchedWords.sort((a, b) => {
         return (a.score < b.score) ? 1 : (a.score > b.score) ? - 1 : 0;
       });
     } catch (error) {
@@ -345,16 +339,16 @@ class WordScramble {
    * 
    * The lowest length words will be sorted first.
    * 
-   * @param Array array - Contains an array of objects containing all the matched words.
+   * @param Array matchedWords - Array of objects containing all matched words.
    * 
-   * @return array
+   * @return void
    * @throws Error
    * 
    * @author Rômulo Alves Lousada
    */
-  sortWordsByLength = (array) => {
+  sortWordsByLength = (matchedWords) => {
     try {
-      return array.sort((a, b) => {
+      matchedWords.sort((a, b) => {
         return (a.word.length > b.word.length) ? 1 : (a.word.length < b.word.length) ? -1 : 0;
       });
     } catch (error) {
@@ -367,16 +361,16 @@ class WordScramble {
    * 
    * This function will sort the array of matched words alphabetically.
    * 
-   * @param Array array - Contains an array of objects containing all the matched words.
+   * @param Array array - Array of objects containing all matched words.
    * 
    * @return array
    * @throws Error
    * 
    * @author Rômulo Alves Lousada
    */
-  sortWordsAlphabetically = (array) => {
+  sortWordsAlphabetically = (matchedWords) => {
     try {
-      return array.sort((a, b) => {
+      matchedWords.sort((a, b) => {
         return a.word.localeCompare(b.word);
       });
     } catch (error) {
@@ -389,56 +383,58 @@ class WordScramble {
   /***************************************************************/
 
   /**
-   * Highest Score Filter
+   * Remove Lower Scores
    *
-   * This function will filter the highest score words matched.
+   * This function will get the highest score inside the matched words array and
+   * remove any object that has a lower score.
    * 
    * More than one word can be returned.
    *
-   * @param Array array - Contains an array of objects containing all the matched words.
+   * @param Array matchedWords - Array of objects containing all matched words.
    *
-   * @return array
+   * @return void
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  filterHighestScores = (array) => {
+  removeLowerScores = (matchedWords) => {
     try {
-      const highestScore = array[0].score;
+      const { score } = matchedWords[0];
       
-      return array.filter((object) => {
-        if (object.score === highestScore) {
-          return true;
+      for (let index in matchedWords) {
+        if(matchedWords[index].score !== score) {
+          matchedWords.splice(index, 1);
         }
-      });
+      }
     } catch (error) {
       throw error;
     }
   }
 
   /**
-   * Lowest Length Filter
+   * Remove Higher Lengths
    *
-   * This function will filter the lowest length words matched.
+   * This function will get the lowest length word inside the matched words array 
+   * and remove any object that has a higher word length.
    *
    * More than one word can be returned.
    *
-   * @param Array array - Contains an array of objects containing all the matched words.
+   * @param Array matchedWords - Array of objects containing all matched words.
    *
-   * @return array
+   * @return void
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  filterLowestLengths = (array) => {
+  removeHigherLengths = (matchedWords) => {
     try {
-      const lowestLength = array[0].word.length;
+      const { word } = matchedWords[0];
   
-      return array.filter((a) => {
-        if (a.word.length === lowestLength) {
-          return true;
+      for (let index in matchedWords) {
+        if (matchedWords[index].word.length === word.length) {
+          matchedWords.splice(index, 1);
         }
-      });
+      }
     } catch (error) {
       throw error;
     }
@@ -458,17 +454,17 @@ class WordScramble {
    * This function will first convert the string into an array and then use
    * the join function to return the array as an string using a separator.
    *
-   * @param String letters - Unused letters grouped as a single string.
+   * @param Object unused - Object with the letters that weren't used in the word creation.
    *
-   * @return array
+   * @return void
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  formatUnusedLetters = (letters) => {
-    const letterArray = [...letters];
+  formatUnusedLetters = (unused) => {
+    const array = [...unused.letters];
 
-    return letterArray.join(', ');
+    unused.letters = array.join(', ');
   }
 
   /**
@@ -482,23 +478,21 @@ class WordScramble {
    *
    * After those, return a clean string containing only valid letters.
    *
-   * @param String letters - Contains a string with characters that are being 
-   *                         formatted to remove all invalid characters.
+   * @param Object word - Object with letters string that will be formatted.
+   * @param String key - Key used to access the object value.
    *
-   * @return string
+   * @return void
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  formatWord = (letters) => {
+  formatWord = (word, key) => {
     try {
-      letters = this.uppercase(letters);
-      letters = this.removeWhitespaces(letters);
-      letters = this.removeNumbers(letters);
-      letters = this.removeAccentuation(letters);
-      letters = this.removeSpecialCharacters(letters);
-  
-      return letters;
+      this.uppercase(word, key);
+      this.removeWhitespaces(word, key);
+      this.removeNumbers(word, key);
+      this.removeAccentuation(word, key);
+      this.removeSpecialCharacters(word, key);
     } catch (error) {
       throw error;
     }
@@ -507,18 +501,19 @@ class WordScramble {
   /**
    * Uppercase Word
    *
-   * Receives a string and return it uppercased.
+   * Receives an object with the string and return it uppercased.
    *
-   * @param String letters - Contains a string with characters to be uppercased
+   * @param Object word - Object with characters to be uppercased.
+   * @param String key - Key used to access the object value.
    *
-   * @return string
+   * @return void
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  uppercase = (letters) => {
+  uppercase = (word, key) => {
     try {
-      return letters.toUpperCase();
+      word[key] = word[key].toUpperCase();
     } catch (error) {
       throw error;
     }
@@ -527,18 +522,19 @@ class WordScramble {
   /**
    * Remove Whitespaces from Word
    *
-   * Receives a string and return it without whitespaces.
+   * Receives an object with the string and return it without whitespaces.
    *
-   * @param String letters - Contains a string with characters to remove whitespaces
+   * @param Object word - Object with characters to remove whitespaces.
+   * @param String key - Key used to access the object value.
    *
    * @return string
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  removeWhitespaces = (letters) => {
+  removeWhitespaces = (word, key) => {
     try {
-      return letters.replace(/ /g, "")
+      word[key]= word[key].replace(/ /g, "")
     } catch (error) {
       throw error;
     }
@@ -549,16 +545,17 @@ class WordScramble {
    *
    * Receives a string and return it without numbers.
    *
-   * @param String letters - Contains a string with characters to remove numbers
+   * @param Object word - Object with characters to remove numbers
+   * @param String key - Key used to access the object value.
    *
    * @return string
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  removeNumbers = (letters) => {
+  removeNumbers = (word, key) => {
     try {
-      return letters.replace(/[0-9]+/g, "");
+      word[key] = word[key].replace(/[0-9]+/g, "");
     } catch (error) {
       throw error;
     }
@@ -571,22 +568,21 @@ class WordScramble {
    * 
    * It will follow the rules of replacement found in accentuation file.
    * 
-   * @param String letters - Contains a string with characters to remove accentuation
+   * @param Object word - Object with characters to remove accentuation
+   * @param String key - Key used to access the object value.
    *
    * @return string
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  removeAccentuation = (letters) => {
+  removeAccentuation = (word, key) => {
     try {
-      for (let letter of letters) {
+      for (let letter of word.letters) {
         if (letter in this.accentuation) {
-          letters = letters.replace(letter, this.accentuation[letter]);
+          word[key] = word[key].replace(letter, this.accentuation[letter]);
         }
       }
-  
-      return letters;
     } catch (error) {
       throw error;
     }
@@ -597,16 +593,17 @@ class WordScramble {
    *
    * Receives any special character not considered a valid letter.
    * 
-   * @param String letters - Contains a string with characters to remove special characters
+   * @param Object word - Object with characters to remove special characters
+   * @param String key - Key used to access the object value.
    *
    * @return string
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  removeSpecialCharacters = (letters) => {
+  removeSpecialCharacters = (word, key) => {
     try {
-      return letters.replace(/[^\w\s]+/g, "");
+      word[key] = word[key].replace(/[^\w\s]+/g, "");
     } catch (error) {
       throw error;
     }
@@ -726,18 +723,18 @@ class WordScramble {
    * Function that will print in case no words are found after the user
    * inputted the letters he wants to play with.
    * 
-   * @param String letters - Inputted letters by the user.
+   * @param Object input - Object with inputted letters by the user.
    * 
    * @return void
    * @throws Error
    *
    * @author Rômulo Alves Lousada
    */
-  printNoWords = (letters) => {
+  printNoWords = (input) => {
     try {
       this.printMessage(this.messages.BLANK);
       this.printMessage(this.messages.NO_WORD_FOUND);
-      this.printMessage(`${this.messages.WORDS_LEFT} ${letters}`);
+      this.printMessage(`${this.messages.WORDS_LEFT} ${input.letters}`);
       this.printMessage(this.messages.BLANK);
       this.printMessage(this.messages.SEPARATOR);
       this.printMessage(this.messages.BLANK);
