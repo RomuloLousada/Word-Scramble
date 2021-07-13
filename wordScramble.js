@@ -1,5 +1,6 @@
 const fs = require("fs");
 const readline = require("readline");
+const path = require('path');
 
 /**
  * Word Scramble
@@ -24,7 +25,8 @@ class WordScramble {
    */
   constructor() {
     try {
-      this.assetsPath = "./assets";
+      const appDir = path.dirname(require.main.filename);
+      this.assetsPath = `${appDir}/assets`;
   
       this.accentuation = this.getFileContents(this.assetsPath, "accentuation", "json");
       this.messages = this.getFileContents(this.assetsPath, "messages", "json");
@@ -225,16 +227,13 @@ class WordScramble {
    * format it by the same word formatting functions used to format the
    * inputted letters from the user.
    * 
-   * After that, save the database word in a backup variable. It will loop on
-   * every character of the inputted letter and try to find of the current letter
-   * is present inside the backup word.
+   * After that, create two arrays containing each letter from the database word 
+   * and inputted letters and pass it to a function to check if the word can be
+   * matched with the inputted letters
    * 
-   * If it's found, remove the first occurence of that letter from the backup word.
-   * Otherwise, save the letter in a string of unused letters.
-   * 
-   * By the end of the loop, if the backup word is an empty string, it means the
-   * backup word could be entirely matched by the inputted letters, therefore,
-   * saving the word and the unused letters.
+   * If it's true, it means the word could be entirely matched by the inputted 
+   * letters. Then the unused letters are formatted and saved in an array
+   * with the word and the unused letters.
    * 
    * @param Object input - Object with the letters to build the words.
    * 
@@ -251,27 +250,19 @@ class WordScramble {
         const databaseWord = { letters: word };
 
         this.formatWord(databaseWord, 'letters');
-        
-        let backupWord = databaseWord.letters;
-        let unusedLetters = { letters: "" };
-        
-        for (let letter of input.letters) {
-          const index = backupWord.indexOf(letter);
-  
-          if(index !== -1) {
-            backupWord = backupWord.slice(0, index) + backupWord.slice(index + 1);
-          } else {
-            unusedLetters.letters += letter;
-          }
-        }
-  
-        if (backupWord.length === 0) {
-          this.formatUnusedLetters(unusedLetters);
+
+        const spreadWord = [...databaseWord.letters];
+        const spreadInput = [...input.letters];
+
+        const match = this.matchWord(spreadWord, spreadInput);
+
+        if (match.check) {
+          this.formatUnusedLetters(match.unused);
 
           matchedWords.push({
             word: databaseWord.letters,
-            unusedLetters: unusedLetters.letters
-          });
+            unusedLetters: match.unused.letters
+          })
         }
       }
       
@@ -280,6 +271,55 @@ class WordScramble {
       throw error;
     }
   };
+
+  /**
+   * Matches the Word with Inputted Letters.
+   * 
+   * This function will loop on the inputted letters and try to find if the
+   * letter can be found on the database word that's being analyzed.
+   * 
+   * If it can't find the letter on the database word, it will save the letter
+   * in an array of unused letters.
+   * 
+   * If it can find the letter inside the word, it will remove that letter from
+   * the word array and then check if the word array is empty. If it is empty,
+   * it will then get all the remaining letters inside the input array that
+   * weren't looped yet and merge it into the unused letters array and return
+   * true and the unused letters as an array.
+   * 
+   * In case it loops on every inputted letter and there are letters inside the
+   * database word array, it means the word couldn't be entirely matched
+   * by the inputted letters and return false.
+   * 
+   * @param Array word - Array with letters of database word.
+   * @param Array input - Array with letters inputted by the user.
+   * 
+   * @return object
+   * @throws Error
+   * 
+   * @author Rômulo Alves Lousada
+   */
+  matchWord = (word, input) => {
+    const unused = { letters: [] };
+
+    for (let letter in input) {
+      const index = word.indexOf(input[letter]);
+
+      if (index !== -1) {
+        word.splice(index, 1);
+
+        if (word.length === 0) {
+          const rest = input.splice(parseInt(letter) + 1);
+          unused.letters = [...unused.letters, ...rest];
+          return { check: true, unused };
+        }
+      } else {
+        unused.letters.push(input[letter]);
+      }
+    }
+
+    return { check: false };
+  }
 
   /***************************************************************/
   /*********************** BONUS POSITION ************************/
@@ -325,7 +365,7 @@ class WordScramble {
   sortWordsByScore = (matchedWords) => {
     try {
       matchedWords.sort((a, b) => {
-        return (a.score < b.score) ? 1 : (a.score > b.score) ? - 1 : 0;
+        return b.score - a.score;
       });
     } catch (error) {
       throw error;
@@ -349,7 +389,7 @@ class WordScramble {
   sortWordsByLength = (matchedWords) => {
     try {
       matchedWords.sort((a, b) => {
-        return (a.word.length > b.word.length) ? 1 : (a.word.length < b.word.length) ? -1 : 0;
+        return a.word.length - b.word.length;
       });
     } catch (error) {
       throw error;
@@ -403,7 +443,8 @@ class WordScramble {
       
       for (let index in matchedWords) {
         if(matchedWords[index].score !== score) {
-          matchedWords.splice(index, 1);
+          matchedWords.length = index;
+          break;
         }
       }
     } catch (error) {
@@ -431,8 +472,9 @@ class WordScramble {
       const { word } = matchedWords[0];
   
       for (let index in matchedWords) {
-        if (matchedWords[index].word.length === word.length) {
-          matchedWords.splice(index, 1);
+        if (matchedWords[index].word.length > word.length) {
+          matchedWords.length = index;
+          break;
         }
       }
     } catch (error) {
@@ -578,7 +620,7 @@ class WordScramble {
    */
   removeAccentuation = (word, key) => {
     try {
-      for (let letter of word.letters) {
+      for (let letter of word[key]) {
         if (letter in this.accentuation) {
           word[key] = word[key].replace(letter, this.accentuation[letter]);
         }
