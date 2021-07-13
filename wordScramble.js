@@ -26,12 +26,12 @@ class WordScramble {
   constructor() {
     try {
       const appDir = path.dirname(require.main.filename);
-      this.assetsPath = `${appDir}/assets`;
+      const assetsPath = `${appDir}/assets`;
   
-      this.accentuation = this.getFileContents(this.assetsPath, "accentuation", "json");
-      this.messages = this.getFileContents(this.assetsPath, "messages", "json");
-      this.score = this.getFileContents(this.assetsPath, "score", "json");
-      this.words = this.getFileContents(this.assetsPath, "words", "json").words;
+      this.accentuation = this.getFileContents(assetsPath, "accentuation", "json");
+      this.messages = this.getFileContents(assetsPath, "messages", "json");
+      this.score = this.getFileContents(assetsPath, "score", "json");
+      this.words = this.getFileContents(assetsPath, "words", "json").words;
 
       this.rl = readline.createInterface({
         input: process.stdin,
