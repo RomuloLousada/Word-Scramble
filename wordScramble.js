@@ -515,9 +515,8 @@ class WordScramble {
    * This is the core function of word formatting, that calls all other
    * formatting functions.
    *
-   * First, it will remove whitespaces and numbers.
-   * Then uppercase and remove accentuation.
-   * At last, remove any special characters from the remaining letters.
+   * First, it will remove whitespaces, numbers and special characters.
+   * Then uppercase and remove accentuation from the remaining letters.
    *
    * @param Object word - Object with letters string that will be formatted.
    * @param String key - Key used to access the object value.
