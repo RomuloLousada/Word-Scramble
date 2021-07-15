@@ -515,8 +515,8 @@ class WordScramble {
    * This is the core function of word formatting, that calls all other
    * formatting functions.
    *
-   * First, it will remove whitespaces, numbers, special characters and
-   * accentuations then uppercase the remaining letters. 
+   * First, it will remove whitespaces, numbers and special characters.
+   * Then uppercase and remove accentuation from the remaining letters. 
    *
    * @param Object word - Object with letters string that will be formatted.
    * @param String key - Key used to access the object value.
@@ -531,29 +531,8 @@ class WordScramble {
       this.removeWhitespaces(word, key);
       this.removeNumbers(word, key);
       this.removeSpecialCharacters(word, key);
-      this.removeAccentuation(word, key);
       this.uppercase(word, key);
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  /**
-   * Uppercase Word
-   *
-   * Receives an object with the string and return it uppercased.
-   *
-   * @param Object word - Object with characters to be uppercased.
-   * @param String key - Key used to access the object value.
-   *
-   * @return void
-   * @throws Error
-   *
-   * @author Rômulo Alves Lousada
-   */
-  uppercase = (word, key) => {
-    try {
-      word[key] = word[key].toUpperCase();
+      this.removeAccentuation(word, key);
     } catch (error) {
       throw error;
     }
@@ -602,6 +581,48 @@ class WordScramble {
   };
 
   /**
+   * Remove Special Characters from Word
+   *
+   * Receives any special character not considered a valid letter.
+   * 
+   * @param Object word - Object with characters to remove special characters
+   * @param String key - Key used to access the object value.
+   *
+   * @return string
+   * @throws Error
+   *
+   * @author Rômulo Alves Lousada
+   */
+  removeSpecialCharacters = (word, key) => {
+    try {
+      word[key] = word[key].replace(/[^A-zÀ-ü0-9]+|[_]+/g, "");
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  /**
+   * Uppercase Word
+   *
+   * Receives an object with the string and return it uppercased.
+   *
+   * @param Object word - Object with characters to be uppercased.
+   * @param String key - Key used to access the object value.
+   *
+   * @return void
+   * @throws Error
+   *
+   * @author Rômulo Alves Lousada
+   */
+  uppercase = (word, key) => {
+    try {
+      word[key] = word[key].toUpperCase();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  /**
    * Remove Accentuation from Word
    *
    * Receives a string and return it without accentuation.
@@ -623,27 +644,6 @@ class WordScramble {
           word[key] = word[key].replace(letter, this.accentuation[letter]);
         }
       }
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  /**
-   * Remove Special Characters from Word
-   *
-   * Receives any special character not considered a valid letter.
-   * 
-   * @param Object word - Object with characters to remove special characters
-   * @param String key - Key used to access the object value.
-   *
-   * @return string
-   * @throws Error
-   *
-   * @author Rômulo Alves Lousada
-   */
-  removeSpecialCharacters = (word, key) => {
-    try {
-      word[key] = word[key].replace(/[^\w\s]+/g, "");
     } catch (error) {
       throw error;
     }
