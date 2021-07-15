@@ -515,8 +515,9 @@ class WordScramble {
    * This is the core function of word formatting, that calls all other
    * formatting functions.
    *
-   * First, it will remove whitespaces, numbers and special characters.
-   * Then uppercase and remove accentuation from the remaining letters. 
+   * First, it will remove whitespaces and numbers.
+   * Then uppercase and remove accentuation.
+   * At last, remove any special characters from the remaining letters.
    *
    * @param Object word - Object with letters string that will be formatted.
    * @param String key - Key used to access the object value.
@@ -595,7 +596,7 @@ class WordScramble {
    */
   removeSpecialCharacters = (word, key) => {
     try {
-      word[key] = word[key].replace(/[^A-zÀ-ü0-9]+|[_]+/g, "");
+      word[key] = word[key].replace(/[^a-zà-üA-ZÀ-Ü]+/g, "");
     } catch (error) {
       throw error;
     }
@@ -774,7 +775,7 @@ class WordScramble {
     try {
       this.printMessage(this.messages.BLANK);
       this.printMessage(this.messages.NO_WORD_FOUND);
-      this.printMessage(`${this.messages.WORDS_LEFT} ${input.letters}`);
+      this.printMessage(`${this.messages.UNUSED_LETTERS} ${input.letters}`);
       this.printMessage(this.messages.BLANK);
       this.printMessage(this.messages.SEPARATOR);
       this.printMessage(this.messages.BLANK);
@@ -848,7 +849,13 @@ class WordScramble {
     try {
       this.printMessage(this.messages.BLANK);
       this.printMessage(`${winner.word}, palavra de ${winner.score} pontos.`);
-      this.printMessage(`${this.messages.WORDS_LEFT} ${winner.unusedLetters}.`);
+
+      if (winner.unusedLetters.length) {
+        this.printMessage(`${this.messages.UNUSED_LETTERS} ${winner.unusedLetters}.`);
+      } else {
+        this.printMessage(this.messages.ALL_LETTERS_USED);
+      }
+
       this.printMessage(this.messages.BLANK);
       this.printMessage(this.messages.SEPARATOR);
       this.printMessage(this.messages.BLANK);
