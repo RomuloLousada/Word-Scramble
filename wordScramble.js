@@ -515,10 +515,8 @@ class WordScramble {
    * This is the core function of word formatting, that calls all other
    * formatting functions.
    *
-   * First, it will uppercase all letters, then remove whitespaces, numbers,
-   * accentuations and special characters.
-   *
-   * After those, return a clean string containing only valid letters.
+   * First, it will remove whitespaces, numbers, special characters and
+   * accentuations then uppercase the remaining letters. 
    *
    * @param Object word - Object with letters string that will be formatted.
    * @param String key - Key used to access the object value.
@@ -530,11 +528,11 @@ class WordScramble {
    */
   formatWord = (word, key) => {
     try {
-      this.uppercase(word, key);
       this.removeWhitespaces(word, key);
       this.removeNumbers(word, key);
-      this.removeAccentuation(word, key);
       this.removeSpecialCharacters(word, key);
+      this.removeAccentuation(word, key);
+      this.uppercase(word, key);
     } catch (error) {
       throw error;
     }
